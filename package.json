@@ -1,0 +1,11 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@webtoon/psd": "^0.4.0",
+    "fs-extra": "^11.2.0",
+    "imagekit": "^4.1.4",
+    "rgb-hex": "^4.1.0",
+    "sharp": "^0.33.3",
+    "yargs": "^17.7.2"
+  }
+}
