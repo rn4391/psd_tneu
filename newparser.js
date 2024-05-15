@@ -167,7 +167,10 @@ function convertToIKLayers(transformedString) {
             // Differentiate between number and string values
             layer[key] = isNaN(value) ? value : parseInt(value, 10);
         });
-
+    
+        if(layer.type == "text" && layer.ie && !layer.i) {
+            layer.i = new Buffer.from(decodeURIComponent(layer.ie), "base64").toString()
+        }
         output.layers.push(layer);
     });
 
