@@ -1,0 +1,18 @@
+<html>
+<head>
+    <script  type="module" src="./dist/bundle.js"></script> 
+</head>
+<body>
+    <p>Enter the transformation string</p>
+    <textarea id="transformation-string" cols="100" rows="20"></textarea>
+    <button onclick="processTransformationString({})">Convert To Layers JSON</button>
+    <code style="display:block;"><pre id="output-code" style="max-width: 700px;white-space: normal;"></pre></code>
+    <script>
+        async function processTransformationString(options) {
+            const input = document.getElementById('transformation-string').value;
+            const output = await window.IKNamespace.convertTransformStringToJSON(input); // Assuming Psd.parse is browser-compatible
+            document.getElementById('output-code').innerText = JSON.stringify(output);
+        }
+    </script>
+</body>
+</html>

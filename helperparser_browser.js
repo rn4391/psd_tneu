@@ -1,8 +1,9 @@
 //runArray, StyleDict reasoning here - https://github.com/webtoon/psd/issues/64
 
 import rgbHex from 'rgb-hex';
-import sharp from 'sharp';
+// import sharp from 'sharp';
 import * as fonts from "./fonts.js";
+import { encode } from 'js-base64';
 
 function isLayerHidden(layer) {
     // console.log(layer);
@@ -18,15 +19,13 @@ function getLayerProperties(layer) {
 
 async function processTextLayer(layer, parsedLayers) {
     let layerProperties = getLayerProperties(layer);
-    // console.log(layerProperties.textProperties.EngineDict.ParagraphRun.RunArray[0].ParagraphSheet.Properties.Justification);
-    // console.log(layerProperties.textProperties.EngineDict.ParagraphRun.RunArray[0]);
 
     let textSplit = layerProperties.text.split("\r");
     for(let i = 0; i < textSplit.length; i++) {
         if(textSplit[i].length) {
             let parsedLayer = { type : "text" };
             parsedLayer.i = textSplit[i];     
-            parsedLayer.ie = encodeURIComponent(Buffer.from(textSplit[i]).toString('base64'));
+            parsedLayer.ie = encodeURIComponent(encode(textSplit[i]));
 
             //Positioning
             parsedLayer.lx = (layerProperties.left < 0 ? 0 : layerProperties.left);
@@ -97,8 +96,8 @@ async function processImageLayer(layer, parsedLayers, data) {
 
     parsedLayers.splice(0,0,parsedLayer);
 
-    let filePath = "./" + data.OUTPUT_DIR + "/" + fileName
-    await storeImageLocally(layer, layerWidth, layerHeight, filePath);
+    // let filePath = "./" + data.OUTPUT_DIR + "/" + fileName
+    // await storeImageLocally(layer, layerWidth, layerHeight, filePath);
 }
 
 function getFontSizeFromLayer(layerProperties, textIndex) {
@@ -171,19 +170,19 @@ function getFontPath(fontFace) {
     return [fonts.FONT_DIR, fonts.DEFAULT_FONT].join("@@")
 }
 
-async function storeImageLocally(layer, layerWidth, layerHeight, filePath) {
-    let layerPixelData = await layer.composite();
-    let options = {
-        width : layerWidth,
-        height : layerHeight,
-        channels : 4
-    };
-    // console.log(parsedLayer);
-    // console.log(layer.layerFrame.channels.get(-1))
-    await new sharp(layerPixelData, {
-        raw : options
-    }).toFile(filePath);
-}
+// async function storeImageLocally(layer, layerWidth, layerHeight, filePath) {
+//     let layerPixelData = await layer.composite();
+//     let options = {
+//         width : layerWidth,
+//         height : layerHeight,
+//         channels : 4
+//     };
+//     // console.log(parsedLayer);
+//     // console.log(layer.layerFrame.channels.get(-1))
+//     await new sharp(layerPixelData, {
+//         raw : options
+//     }).toFile(filePath);
+// }
 
 export {
     isLayerHidden,

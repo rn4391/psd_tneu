@@ -1,0 +1,40 @@
+<html>
+<head>
+    <script  type="module" src="./dist/bundle.js"></script> 
+</head>
+<body>
+    <input type="file" id="psdFileInput" accept=".psd">
+    <button onclick="processFile()">Process</button>
+
+    <code style="display:block;"><pre id="output-url" style="max-width: 700px;white-space: normal;"></pre></code>
+    <code style="display:block;"><pre id="output-layers" style="max-width: 700px;white-space: normal;"></pre></code>
+    <img id="output-image" style="display:block"/>
+    <script>
+        async function processFile(options) {
+            options = options || {};
+            const fileInput = document.getElementById('psdFileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                console.error("No file selected");
+                return;
+            }
+
+            let fileName = file.name;
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const buffer = event.target.result;
+                try {
+                    options.fileName = fileName;
+                    const output = await window.IKNamespace.parsePSDFile(buffer, options); // Assuming Psd.parse is browser-compatible
+                    document.getElementById('output-layers').innerText = JSON.stringify(output.layers);
+                    document.getElementById('output-image').src = output.finalUrl;
+                    document.getElementById('output-url').innerText = output.finalUrl;
+                } catch (error) {
+                    console.error("Error parsing PSD:", error);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
+</html>

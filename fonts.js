@@ -1,8 +1,10 @@
 const FONT_DIR = "tneufonts";
-const DEFAULT_FONT = "PTSans-Regular.ttf";
+const DEFAULT_FONT = "ProximaNovaRegular.otf";
 const FONTS_INSTALLED = {
-  "PTSans-Bold.ttf" : 1,
-  "PTSans-Regular.ttf": 1
+  "PTSansBold.ttf" : 1,
+  "PTSansRegular.ttf": 1,
+  "ProximaNovaRegular.otf" : 1,
+  "ProximaNovaABold.otf" : 1
 }
 
 export {
