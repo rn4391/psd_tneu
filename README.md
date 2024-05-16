@@ -31,3 +31,11 @@ node newparser.js --file=<psdfilepath.psd> --output=json
 node newparser.js --mode=transformToJSON --transform=<transformation_string>
 ```
 
+
+# To Run in browser
+1. Run `npm install` to install webpack, js-base64 etc.
+2. Run `npm run build` to create the bundled JS file that loads in the browser.
+3. Start any local server in this folder like `python3 -m http.server 9000`. Access https://localhost:9000/browser_psd_parser.html to get PSD parsing and browser_transform_parser.html for transform string to JSON conversion.
+4. The bundled JS file returns both the layers and the output URL when used for PSD parsing. It is up to you which one to use.
+5. If you make any change to the JS files, re-run `npm run build`.
+6. Sample implementation of how these functions - PSD parsing to URL and layers, and transformation string to layers - can be seen in respective html files.
