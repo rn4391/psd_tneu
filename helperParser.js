@@ -95,6 +95,13 @@ async function processImageLayer(layer, parsedLayers, data) {
         parsedLayer.cm = "extract";
     }
 
+    // //Opacity is currently handled when we extract the image composite. But if that needs to change
+    // Then this will be used
+    // let opacity = Math.round((layerProperties.opacity / 255) * 100);
+    // if (opacity > 0 && opacity < 100) {
+    //   parsedLayer.o = opacity;
+    // }
+
     parsedLayers.splice(0,0,parsedLayer);
 
     let filePath = "./" + data.OUTPUT_DIR + "/" + fileName
@@ -178,8 +185,7 @@ async function storeImageLocally(layer, layerWidth, layerHeight, filePath) {
         height : layerHeight,
         channels : 4
     };
-    // console.log(parsedLayer);
-    // console.log(layer.layerFrame.channels.get(-1))
+
     await new sharp(layerPixelData, {
         raw : options
     }).toFile(filePath);
