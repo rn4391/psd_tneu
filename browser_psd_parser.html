@@ -6,8 +6,13 @@
     <input type="file" id="psdFileInput" accept=".psd">
     <button onclick="processFile()">Process</button>
 
+    <h4>Image URL with Layers</h4>
     <code style="display:block;"><pre id="output-url" style="max-width: 700px;white-space: normal;"></pre></code>
+    <h4>PSD as Layers JSON</h4>
     <code style="display:block;"><pre id="output-layers" style="max-width: 700px;white-space: normal;"></pre></code>
+    <h4>Original Fonts in PSD</h4>
+    <code style="display:block;"><pre id="output-fonts" style="max-width: 700px;white-space: normal;"></pre></code>
+    <h4>Output image</h4>
     <img id="output-image" style="display:block"/>
     <script>
         async function processFile(options) {
@@ -27,6 +32,7 @@
                     options.fileName = fileName;
                     const output = await window.IKNamespace.parsePSDFile(buffer, options); // Assuming Psd.parse is browser-compatible
                     document.getElementById('output-layers').innerText = JSON.stringify(output.layers);
+                    document.getElementById('output-fonts').innerText = JSON.stringify(output.originalFonts);
                     document.getElementById('output-image').src = output.finalUrl;
                     document.getElementById('output-url').innerText = output.finalUrl;
                 } catch (error) {

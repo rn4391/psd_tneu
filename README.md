@@ -6,7 +6,7 @@ All fonts that are used in your PSD files should be uploaded to a specific folde
 
 Once fonts are uploaded, you need to add their exact names in `FONTS_INSTALLED` map in fonts.js file. Only when you add a font installed here, will it get used in PSD parsing. Otherwise, ImageKit will default to the font specified against `DEFAULT_FONT`. 
 
-The font name that you upload in the designated folder in ImageKit media library should exactly match the font name used in the PSD file. Otherwise ImageKit has no way of knowing if the font in the PSD is the same as the font uploaded to the media library.
+The font name that you upload in the designated folder in ImageKit media library should exactly match the font name used in the PSD file. Otherwise ImageKit has no way of knowing if the font in the PSD is the same as the font uploaded to the media library. To work around this and handle cases where the same font might be referenced with different names in different PSD file, a new field `FONT_NAME_ALIASES` has been introduced. In this object the key is the name of the font as it appears in the the PSD file, and the value is the name of the actual font file uploaded in your media library and is mentioned in `FONTS_INSTALLED`
 
 # Sample Commands
 
@@ -24,6 +24,12 @@ node newparser.js --file=<psdfilepath.psd>
 ## Parse PSD and get only JSON output for the transforms
 ```
 node newparser.js --file=<psdfilepath.psd> --output=json
+```
+
+## Parse PSD and get only the font names used in the PSD file
+This is helpful in correcting your fonts config
+```
+node newparser.js --file=<psdfilepath.psd> --output=fonts
 ```
 
 ## Provide transform string and get a JSON output from it

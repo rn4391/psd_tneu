@@ -16,7 +16,7 @@ function getLayerProperties(layer) {
     return layer?.layerFrame?.layerProperties || {};
 }
 
-async function processTextLayer(layer, parsedLayers) {
+async function processTextLayer(layer, parsedLayers, originalFonts) {
     let layerProperties = getLayerProperties(layer);
     // console.log(layerProperties.textProperties.EngineDict.ParagraphRun.RunArray[0].ParagraphSheet.Properties.Justification);
     // console.log(layerProperties.textProperties.EngineDict.ParagraphRun.RunArray[0]);
@@ -46,7 +46,7 @@ async function processTextLayer(layer, parsedLayers) {
             //Attributes
             parsedLayer.fs = getFontSizeFromLayer(layerProperties, i);
             parsedLayer.co = getFontColorFromLayer(layerProperties, i);
-            parsedLayer.ff = getFontFaceFromLayer(layerProperties, i);
+            parsedLayer.ff = getFontFaceFromLayer(layerProperties, i, originalFonts);
             parsedLayer.ia = getInternalAlignmentFromLayer(layerProperties, i);
 
             parsedLayers.splice(0,0,parsedLayer);
@@ -134,11 +134,11 @@ function getLineHeight(layerProperties, textIndex) {
     }
 }
 
-function getFontFaceFromLayer(layerProperties, textIndex) {
+function getFontFaceFromLayer(layerProperties, textIndex, originalFonts) {
     let runArray = getRunArray(layerProperties, textIndex);
     let availableFonts = layerProperties.textProperties.DocumentResources.FontSet;
     let currentLayerFont = availableFonts[runArray.StyleSheet.StyleSheetData.Font];
-    return getFontPath(currentLayerFont.Name);
+    return getFontPath(currentLayerFont.Name, originalFonts);
 }
 
 function getInternalAlignmentFromLayer(layerProperties, textIndex) {
@@ -166,11 +166,19 @@ function getActualFontSizeFromStyleData(givenFontSize, typeToolObjectSetting) {
     return Math.round(givenFontSize * ((typeToolObjectSetting.transformXX + typeToolObjectSetting.transformYY)/2))
 }
 
-function getFontPath(fontFace) {
+function getFontPath(fontFace, originalFonts) {
     let fontName = (fontFace).replace(/[\W_]+/g,"");
+    
+    if(!originalFonts[fontName]) {
+        originalFonts[fontName] = 1;
+    }
+
+    if(fonts.FONT_NAME_ALIASES[fontName]) {
+        fontName = fonts.FONT_NAME_ALIASES[fontName]
+    }
 
     for(var i in fonts.FONTS_INSTALLED) {
-        if(i.split(".")[0] === fontName) {
+        if(i.split(".")[0] === fontName || i === fontName) {
             return [fonts.FONT_DIR, i].join("@@")
         }
     }

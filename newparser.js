@@ -47,6 +47,7 @@ let ikOutput = {};
 ikOutput.width = fileHeader.width;
 ikOutput.height = fileHeader.height;
 ikOutput.layers = [];
+ikOutput.originalFonts = {};
 
 
 await traverseNode(psdFile);
@@ -59,6 +60,8 @@ let transformationParameter = convertToIKTransform(ikOutput);
 
 if(argv.output == "json") {
     console.log(ikOutput.layers);
+} else if(argv.output == "fonts") {
+    console.log(ikOutput.originalFonts);
 } else {
     console.log(config.CANVAS_FILE + "?tr=" + transformationParameter + "&v=" + fileModifiedTime);
 }
@@ -82,7 +85,7 @@ async function traverseNode(node) {
     else if (node.type === "Layer") {
         if(!helperParser.isLayerHidden(node)) {
             if (node.textProperties) {
-                await helperParser.processTextLayer(node, ikOutput.layers);
+                await helperParser.processTextLayer(node, ikOutput.layers, ikOutput.originalFonts);
             } else {
                 await helperParser.processImageLayer(node, ikOutput.layers, {
                     OUTPUT_DIR: OUTPUT_DIR,

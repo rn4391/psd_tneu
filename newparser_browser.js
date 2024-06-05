@@ -14,6 +14,7 @@ window.IKNamespace.parsePSDFile = async function(buffer, options) {
     window.IKNamespace.ikOutput.width = fileHeader.width;
     window.IKNamespace.ikOutput.height = fileHeader.height;
     window.IKNamespace.ikOutput.layers = [];
+    window.IKNamespace.ikOutput.originalFonts = {};
     window.IKNamespace.OUTPUT_DIR = (options.fileName).replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
     await traverseNode(psdFile);
@@ -26,7 +27,8 @@ window.IKNamespace.parsePSDFile = async function(buffer, options) {
 
     return {
         layers : window.IKNamespace.ikOutput.layers,
-        finalUrl : config.CANVAS_FILE + "?tr=" + transformationParameter + "&v=" + (new Date()).getTime()
+        finalUrl : config.CANVAS_FILE + "?tr=" + transformationParameter + "&v=" + (new Date()).getTime(),
+        originalFonts : window.IKNamespace.ikOutput.originalFonts
     }
 }
 
@@ -83,7 +85,7 @@ async function traverseNode(node) {
     else if (node.type === "Layer") {
         if(!helperParser.isLayerHidden(node)) {
             if (node.textProperties) {
-                await helperParser.processTextLayer(node, window.IKNamespace.ikOutput.layers);
+                await helperParser.processTextLayer(node, window.IKNamespace.ikOutput.layers, window.IKNamespace.ikOutput.originalFonts);
             } else {
                 await helperParser.processImageLayer(node, window.IKNamespace.ikOutput.layers, {
                     OUTPUT_DIR: window.IKNamespace.OUTPUT_DIR,
