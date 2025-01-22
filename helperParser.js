@@ -18,38 +18,76 @@ function getLayerProperties(layer) {
 
 async function processTextLayer(layer, parsedLayers, originalFonts) {
     let layerProperties = getLayerProperties(layer);
-    // console.log(layerProperties.textProperties.EngineDict.ParagraphRun.RunArray[0].ParagraphSheet.Properties.Justification);
-    // console.log(layerProperties.textProperties.EngineDict.ParagraphRun.RunArray[0]);
+    // console.log((layerProperties.textProperties));
+    // console.log(layerProperties?.textProperties?.EngineDict?.ParagraphRun?.RunArray[0] || {});
+    
+    /*
+    If text contains multiple lines, but each line has distinctly different style, then we split each line
+    Otherwise, we just consider it to be like a single paragraph text
+    */
+    if(areMultipleTextLinesIdentical(layerProperties)) {
+        let parsedLayer = { type: "text" };
+        parsedLayer.i = layerProperties.text;
+        parsedLayer.ie = encodeURIComponent(Buffer.from(layerProperties.text).toString('base64'));
 
-    let textSplit = layerProperties.text.split("\r");
-    for(let i = 0; i < textSplit.length; i++) {
-        if(textSplit[i].length) {
-            let parsedLayer = { type : "text" };
-            parsedLayer.i = textSplit[i];     
-            parsedLayer.ie = encodeURIComponent(Buffer.from(textSplit[i]).toString('base64'));
+        //Positioning
+        parsedLayer.lx = (layerProperties.left < 0 ? 0 : layerProperties.left);
+        parsedLayer.ly = (layerProperties.top < 0 ? 0 : layerProperties.top);
+        
+        //Opacity
+        let opacity = Math.round((layerProperties.opacity / 255) * 10);
+        if (opacity > 0 && opacity < 10) {
+            parsedLayer.al = opacity;
+        }
 
-            //Positioning
-            parsedLayer.lx = (layerProperties.left < 0 ? 0 : layerProperties.left);
-            if(i == 0) {
-                parsedLayer.ly = (layerProperties.top < 0 ? 0 : layerProperties.top);
-            } else {
-                let lineHeight = getLineHeight(layerProperties, i);
-                parsedLayer.ly = layerProperties.top + lineHeight*i;
+        //Attributes
+        parsedLayer.fs = getFontSizeFromLayer(layerProperties, 0);
+        parsedLayer.co = getFontColorFromLayer(layerProperties, 0);
+        parsedLayer.ff = getFontFaceFromLayer(layerProperties, 0, originalFonts);
+        parsedLayer.ia = getInternalAlignmentFromLayer(layerProperties, 0);
+        
+        //Not adding width in text layer for now because of potential 
+        //issues because of different font being available than the one in PSD
+        //which would mean the font that gets used in the layer might take up
+        //more or less width than what is obtained from PSD
+        //parsedLayer.w = Math.abs(layerProperties.right - layerProperties.left) + 1;
+        
+        parsedLayer.rt = getRotationAngle(layerProperties);
+
+        parsedLayers.splice(0, 0, parsedLayer);
+    } else {
+        let textSplit = layerProperties.text.split("\r");
+        for (let i = 0; i < textSplit.length; i++) {
+            if (textSplit[i].length) {
+                let parsedLayer = { type: "text" };
+                parsedLayer.i = textSplit[i];
+                parsedLayer.ie = encodeURIComponent(Buffer.from(textSplit[i]).toString('base64'));
+
+                //Positioning
+                parsedLayer.lx = (layerProperties.left < 0 ? 0 : layerProperties.left);
+                if (i == 0) {
+                    parsedLayer.ly = (layerProperties.top < 0 ? 0 : layerProperties.top);
+                } else {
+                    let lineHeight = getLineHeight(layerProperties, i);
+                    parsedLayer.ly = layerProperties.top + lineHeight * i;
+                }
+
+                //Opacity
+                let opacity = Math.round((layerProperties.opacity / 255) * 10);
+                if (opacity > 0 && opacity < 10) {
+                    parsedLayer.al = opacity;
+                }
+
+                //Attributes
+                parsedLayer.fs = getFontSizeFromLayer(layerProperties, i);
+                parsedLayer.co = getFontColorFromLayer(layerProperties, i);
+                parsedLayer.ff = getFontFaceFromLayer(layerProperties, i, originalFonts);
+                parsedLayer.ia = getInternalAlignmentFromLayer(layerProperties, i);
+
+                parsedLayer.rt = getRotationAngle(layerProperties);
+
+                parsedLayers.splice(0, 0, parsedLayer);
             }
-            
-            //Opacity
-            let opacity = Math.round((layerProperties.opacity / 255) * 10);
-            if (opacity > 0 && opacity < 10) {
-              parsedLayer.al = opacity;
-            }
-
-            //Attributes
-            parsedLayer.fs = getFontSizeFromLayer(layerProperties, i);
-            parsedLayer.co = getFontColorFromLayer(layerProperties, i);
-            parsedLayer.ff = getFontFaceFromLayer(layerProperties, i, originalFonts);
-            parsedLayer.ia = getInternalAlignmentFromLayer(layerProperties, i);
-
-            parsedLayers.splice(0,0,parsedLayer);
         }
     }
     
@@ -76,23 +114,66 @@ async function processImageLayer(layer, parsedLayers, data) {
     let layerWidth = Math.abs(layerProperties.right - layerProperties.left) + 1;
     let layerHeight = Math.abs(layerProperties.bottom - layerProperties.top) + 1;
 
-    let width = layerWidth, height = layerHeight, x = 0, y = 0;
+    let width = layerWidth, height = layerHeight, x = 0, y = 0, cropMode = "";
+    //Crop the image to keep it correctly in bounds
     if(width > data.canvasWidth) {
         width = data.canvasWidth;
         x = Math.abs(0 - Math.abs(layerProperties.left));
+        cropMode = "extract"
+        if (layerProperties.left < 0 && layerProperties.right > data.canvasWidth) {
+            x = Math.abs(0 - Math.abs(layerProperties.left));
+            width = data.canvasWidth;
+            cropMode = "extract"
+        } else if (layerProperties.left < 0 && layerProperties.right < data.canvasWidth) {
+            x = Math.abs(0 - Math.abs(layerProperties.left));
+            width = layerWidth - x; 
+            cropMode = "extract"
+        } else if(layerProperties.right > data.canvasWidth) {
+            width = Math.abs(data.canvasWidth - layerProperties.left);
+            cropMode = "extract"
+        }
+    } else {
+        
+        if (layerProperties.left < 0) {
+            x = Math.abs(0 - Math.abs(layerProperties.left));
+            width = layerWidth - x;
+            cropMode = "extract"
+        } else if(layerProperties.right > data.canvasWidth) {
+            width = Math.abs(data.canvasWidth - layerProperties.left);
+            cropMode = "extract"
+        }
     }
     parsedLayer.w = width;
     parsedLayer.x = x;
     
     if(height > data.canvasHeight) {
-        height = data.canvasHeight;
-        y = Math.abs(0 - Math.abs(layerProperties.top));
+        if (layerProperties.top < 0 && layerProperties.bottom > data.canvasHeight) {
+            y = Math.abs(0 - Math.abs(layerProperties.top));
+            height = data.canvasHeight; 
+            cropMode = "extract"
+        } else if (layerProperties.top < 0 && layerProperties.bottom < data.canvasHeight) {
+            y = Math.abs(0 - Math.abs(layerProperties.top));
+            height = layerHeight - y; 
+            cropMode = "extract"
+        } else if(layerProperties.bottom > data.canvasHeight) {
+            height = Math.abs(data.canvasHeight - layerProperties.top);
+            cropMode = "extract"
+        }
+    } else {
+        if (layerProperties.top < 0) {
+            y = Math.abs(0 - Math.abs(layerProperties.top));
+            height = layerHeight - y; 
+            cropMode = "extract"
+        } else if(layerProperties.bottom > data.canvasHeight) {
+            height = Math.abs(data.canvasHeight - layerProperties.top);
+            cropMode = "extract"
+        }
     }
     parsedLayer.h = height;
     parsedLayer.y = y;
 
-    if(x > 0 || y > 0) {
-        parsedLayer.cm = "extract";
+    if(cropMode) {
+        parsedLayer.cm = cropMode;
     }
 
     // //Opacity is currently handled when we extract the image composite. But if that needs to change
@@ -163,7 +244,57 @@ function getParagraphRunArray(layerProperties, index) {
 }
 
 function getActualFontSizeFromStyleData(givenFontSize, typeToolObjectSetting) {
-    return Math.round(givenFontSize * ((typeToolObjectSetting.transformXX + typeToolObjectSetting.transformYY)/2))
+    const scalingFactor = Math.sqrt(typeToolObjectSetting.transformXX ** 2 + typeToolObjectSetting.transformYX ** 2);
+
+    return Math.round(givenFontSize * scalingFactor)
+}
+
+// Function to calculate clockwise rotation from a transformation matrix
+function getRotationAngle(layerProperties) {
+    let typeToolObjectSetting = layerProperties.additionalLayerProperties.TySh;
+
+    // Calculate the angle in radians
+    const radians = Math.atan2(typeToolObjectSetting.transformYX, typeToolObjectSetting.transformXX);
+    
+    // Convert to degrees
+    const degrees = radians * (180 / Math.PI);
+
+    // Clockwise rotation is the negative of the calculated angle
+    return "N" + Math.round(degrees);
+}
+
+
+function areMultipleTextLinesIdentical(layerProperties) {
+    // Access the RunArray
+    const runArray = layerProperties?.textProperties?.EngineDict?.StyleRun?.RunArray;
+
+    // If RunArray is undefined or empty, return false
+    if (!Array.isArray(runArray) || runArray.length === 0) {
+        return false;
+    }
+
+    // Extract the first index's properties to compare against
+    const firstFontSize = runArray[0]?.StyleSheet?.StyleSheetData?.FontSize;
+    const firstFontColor = JSON.stringify(runArray[0]?.StyleSheet?.StyleSheetData?.FillColor); // Stringify to compare objects
+    const firstFont = runArray[0]?.StyleSheet?.StyleSheetData?.Font;
+
+    // Iterate through all indexes in RunArray
+    for (let i = 1; i < runArray.length; i++) {
+        const currentFontSize = runArray[i]?.StyleSheet?.StyleSheetData?.FontSize;
+        const currentFontColor = JSON.stringify(runArray[i]?.StyleSheet?.StyleSheetData?.FillColor);
+        const currentFont = runArray[i]?.StyleSheet?.StyleSheetData?.Font;
+        
+        // Compare values with the first index
+        if (
+            currentFontSize !== firstFontSize ||
+            currentFontColor !== firstFontColor ||
+            currentFont !== firstFont
+        ) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function getFontPath(fontFace, originalFonts) {
